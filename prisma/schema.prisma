@@ -13,6 +13,9 @@ model User {
   email     String   @unique
   password  String
   createdAt DateTime @default(now())
+  items     Item[]  
+  claims    Claim[]  
+ 
 }
 
 model OTP {
@@ -22,5 +25,35 @@ model OTP {
   name      String?       //temp store
   password  String?       //hashed password
   expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Item {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  type        String   // "lost" or "found"
+  location    String
+  date        DateTime
+  imageUrl    String?
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  claims      Claim[]  
+  createdAt   DateTime @default(now())
+}
+
+model Claim {
+  id        String   @id @default(cuid())
+  message   String?
+
+  status    String   @default("pending") // pending / approved / rejected
+
+  itemId    String
+  item      Item     @relation(fields: [itemId], references: [id])
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
   createdAt DateTime @default(now())
 }

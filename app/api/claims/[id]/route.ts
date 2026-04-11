@@ -4,7 +4,7 @@ import { getUserFromToken } from "@/lib/getUser";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getUserFromToken();
@@ -16,7 +16,7 @@ export async function PATCH(
       );
     }
 
-    const claimId = params.id;
+    const { id: claimId } = await context.params;
     const { status } = await req.json(); // approved / rejected
 
     if (!status || !["approved", "rejected"].includes(status)) {
@@ -56,6 +56,13 @@ export async function PATCH(
         },
         data: { status: "rejected" },
       });
+      //CREATE CHAT
+      await prisma.chat.create({
+       data: {
+        claimId: claim.id,
+        },
+  });
+
     }
 
     // 4. Update selected claim

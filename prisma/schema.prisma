@@ -14,7 +14,8 @@ model User {
   password  String
   createdAt DateTime @default(now())
   items     Item[]  
-  claims    Claim[]  
+  claims    Claim[] 
+  messages Message[] 
  
 }
 
@@ -54,6 +55,30 @@ model Claim {
 
   userId    String
   user      User     @relation(fields: [userId], references: [id])
+  chat Chat?
+  createdAt DateTime @default(now())
+}
+
+model Chat {
+  id        String   @id @default(cuid())
+
+  claimId   String   @unique
+  claim     Claim    @relation(fields: [claimId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  messages  Message[]
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id])
+
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
 
   createdAt DateTime @default(now())
 }

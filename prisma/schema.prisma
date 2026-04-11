@@ -14,3 +14,13 @@ model User {
   password  String
   createdAt DateTime @default(now())
 }
+
+model OTP {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  name      String?       //temp store
+  password  String?       //hashed password
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}

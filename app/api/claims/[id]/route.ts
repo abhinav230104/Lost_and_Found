@@ -17,7 +17,7 @@ export async function PATCH(
     }
 
     const { id: claimId } = await context.params;
-    const { status } = await req.json(); // approved / rejected
+    const { status } = await req.json();
 
     if (!status || !["approved", "rejected"].includes(status)) {
       return NextResponse.json(
@@ -39,7 +39,7 @@ export async function PATCH(
       );
     }
 
-    // 2. Only item owner can update
+    // 2. Only owner can update
     if (claim.item.userId !== user.userId) {
       return NextResponse.json(
         { error: "Not allowed" },
@@ -47,33 +47,60 @@ export async function PATCH(
       );
     }
 
-    // 3. If approving → reject all others
+    // 3. Prevent re-approval if already approved
     if (status === "approved") {
-      await prisma.claim.updateMany({
+      const alreadyApproved = await prisma.claim.findFirst({
         where: {
           itemId: claim.itemId,
-          NOT: { id: claimId },
+          status: "approved",
         },
-        data: { status: "rejected" },
       });
-      //CREATE CHAT
-      await prisma.chat.create({
-       data: {
-        claimId: claim.id,
-        },
-  });
 
+      if (alreadyApproved) {
+        return NextResponse.json(
+          { error: "Item already claimed" },
+          { status: 400 }
+        );
+      }
     }
 
-    // 4. Update selected claim
-    const updated = await prisma.claim.update({
-      where: { id: claimId },
-      data: { status },
+    // 4. Transaction for consistency
+    const result = await prisma.$transaction(async (tx) => {
+      // Reject others if approving
+      if (status === "approved") {
+        await tx.claim.updateMany({
+          where: {
+            itemId: claim.itemId,
+            NOT: { id: claimId },
+          },
+          data: { status: "rejected" },
+        });
+        // Create chat ONLY if not exists
+        const existingChat = await tx.chat.findUnique({
+          where: { claimId: claim.id },
+        });
+
+        if (!existingChat) {
+          await tx.chat.create({
+            data: {
+              claimId: claim.id,
+            },
+          });
+        }
+      }
+
+      // Update selected claim
+      const updatedClaim = await tx.claim.update({
+        where: { id: claimId },
+        data: { status },
+      });
+
+      return updatedClaim;
     });
 
     return NextResponse.json({
       message: `Claim ${status}`,
-      claim: updated,
+      claim: result,
     });
 
   } catch (error) {

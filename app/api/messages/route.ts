@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserFromToken } from "@/lib/getUser";
 
+// =======================
+// POST → Send Message
+// =======================
 export async function POST(req: Request) {
   try {
     const user = await getUserFromToken();
@@ -13,16 +16,17 @@ export async function POST(req: Request) {
       );
     }
 
-    const { chatId, content } = await req.json();
+    const body = await req.json();
+    const { chatId, content } = body;
 
     if (!chatId || !content) {
       return NextResponse.json(
-        { error: "Missing fields" },
+        { error: "chatId and content are required" },
         { status: 400 }
       );
     }
 
-    //Check chat exists
+    // Check chat exists
     const chat = await prisma.chat.findUnique({
       where: { id: chatId },
       include: {
@@ -39,7 +43,7 @@ export async function POST(req: Request) {
       );
     }
 
-    //Check user is part of chat
+    // Check access
     const isOwner = chat.claim.item.userId === user.userId;
     const isClaimant = chat.claim.userId === user.userId;
 
@@ -50,30 +54,39 @@ export async function POST(req: Request) {
       );
     }
 
-    //Create message
+    // Create message
     const message = await prisma.message.create({
       data: {
         content,
         chatId,
         senderId: user.userId,
       },
+      include: {
+        sender: {
+          select: { id: true, name: true },
+        },
+      },
     });
 
     return NextResponse.json({
-      message: "Message sent",
-      data: message,
+      success: true,
+      message,
     });
 
-  } catch (error) {
-    console.error("SEND MESSAGE ERROR:", error);
+  } catch (error: any) {
+    console.error("SEND MESSAGE ERROR:", error.message, error);
 
     return NextResponse.json(
-      { error: "Internal error" },
+      { error: "Internal error", details: error.message },
       { status: 500 }
     );
   }
 }
 
+
+// =======================
+// GET → Fetch Messages
+// =======================
 export async function GET(req: Request) {
   try {
     const user = await getUserFromToken();
@@ -123,7 +136,7 @@ export async function GET(req: Request) {
       );
     }
 
-    // Get messages
+    // Fetch messages
     const messages = await prisma.message.findMany({
       where: { chatId },
       include: {
@@ -135,14 +148,15 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({
+      success: true,
       messages,
     });
 
-  } catch (error) {
-    console.error("GET MESSAGES ERROR:", error);
+  } catch (error: any) {
+    console.error("GET MESSAGES ERROR:", error.message, error);
 
     return NextResponse.json(
-      { error: "Internal error" },
+      { error: "Internal error", details: error.message },
       { status: 500 }
     );
   }

@@ -29,6 +29,11 @@ model OTP {
   createdAt DateTime @default(now())
 }
 
+enum ItemStatus {
+  OPEN
+  CLOSED
+}
+
 model Item {
   id          String   @id @default(cuid())
   title       String
@@ -37,22 +42,26 @@ model Item {
   location    String
   date        DateTime
   imageUrl    String?
-
+  
   userId      String
   user        User     @relation(fields: [userId], references: [id])
-  claims      Claim[]  
+  claims      Claim[]
+  status      ItemStatus @default(OPEN)
   createdAt   DateTime @default(now())
+}
+
+enum ClaimStatus {
+  pending
+  approved
+  rejected
 }
 
 model Claim {
   id        String   @id @default(cuid())
   message   String?
-
-  status    String   @default("pending") // pending / approved / rejected
-
+  status ClaimStatus @default(pending)
   itemId    String
   item      Item     @relation(fields: [itemId], references: [id])
-
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   chat Chat?
@@ -61,12 +70,9 @@ model Claim {
 
 model Chat {
   id        String   @id @default(cuid())
-
   claimId   String   @unique
   claim     Claim    @relation(fields: [claimId], references: [id])
-
   createdAt DateTime @default(now())
-
   messages  Message[]
 }
 

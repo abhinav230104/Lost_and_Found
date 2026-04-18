@@ -25,34 +25,74 @@ export default function Dashboard() {
   }, []);
 
   if (!data) return <div>Loading...</div>;
+ const updateClaim = async (claimId: string, status: string) => {
+  await fetch(`/api/claims/${claimId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({ status }),
+  });
 
+  // reload dashboard
+  location.reload();
+};
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Dashboard</h1>
+  <div style={{ padding: "20px", color: "white" }}>
+    <h2>Dashboard</h2>
 
-      {/* My Items */}
-      <h2>My Items</h2>
-      {data.myItems.map((item: any) => (
+    {/* My Items */}
+    <h3>My Items</h3>
+    {data.myItems.length === 0 ? (
+      <p>No items</p>
+    ) : (
+      data.myItems.map((item: any) => (
         <div key={item.id}>
           <p>{item.title}</p>
         </div>
-      ))}
+      ))
+    )}
 
-      {/* My Claims */}
-      <h2>My Claims</h2>
-      {data.myClaims.map((claim: any) => (
+    {/* My Claims */}
+    <h3>My Claims</h3>
+    {data.myClaims.length === 0 ? (
+      <p>No claims</p>
+    ) : (
+      data.myClaims.map((claim: any) => (
         <div key={claim.id}>
-          <p>{claim.item.title} - {claim.status}</p>
+          <p>
+            {claim.item.title} — {claim.status}
+          </p>
         </div>
-      ))}
+      ))
+    )}
 
-      {/* Claims on My Items */}
-      <h2>Claims On My Items</h2>
-      {data.claimsOnMyItems.map((claim: any) => (
+    {/* Claims on My Items */}
+    <h3>Claims On My Items</h3>
+    {data.claimsOnMyItems.length === 0 ? (
+      <p>No claims</p>
+    ) : (
+      data.claimsOnMyItems.map((claim: any) => (
         <div key={claim.id}>
-          <p>{claim.item.title} - {claim.user.name} ({claim.status})</p>
+          <p>
+            {claim.user.name} claimed {claim.item.title} — {claim.status}
+          </p>
+
+          {/* 🔥 Approve / Reject buttons */}
+          {claim.status === "pending" && (
+            <>
+              <button onClick={() => updateClaim(claim.id, "approved")}>
+                Approve
+              </button>
+              <button onClick={() => updateClaim(claim.id, "rejected")}>
+                Reject
+              </button>
+            </>
+          )}
         </div>
-      ))}
-    </div>
-  );
+      ))
+    )}
+  </div>
+);
 }

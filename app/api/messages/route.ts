@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserFromToken } from "@/lib/getUser";
+import { createNotification } from "@/lib/notifications";
+import { emitToChat } from "@/lib/socket";
 
 // =======================
 // POST → Send Message
@@ -67,6 +69,23 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    emitToChat(chatId, "new-message", message);
+
+    // Notify the other participant
+    const recipientId = isOwner ? chat.claim.userId : chat.claim.item.userId;
+    try {
+      await createNotification(
+        recipientId,
+        "new_message",
+        "New Message",
+        `New message about "${chat.claim.item.title}"`,
+        chat.claim.itemId,
+        chat.claim.id
+      );
+    } catch (notifError) {
+      console.error("Notification creation failed:", notifError);
+    }
 
     return NextResponse.json({
       success: true,

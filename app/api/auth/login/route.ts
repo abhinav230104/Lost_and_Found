@@ -1,9 +1,16 @@
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
-import { generateToken } from "@/lib/auth";
+import { authCookieOptions, generateToken } from "@/lib/auth";
+import { rateLimit, createRateLimitResponse } from "@/lib/rateLimit";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const rateLimitCheck = rateLimit(req, "auth");
+  if (!rateLimitCheck.success) {
+    return createRateLimitResponse(rateLimitCheck.retryAfter!);
+  }
+
   try {
     const { email, password } = await req.json();
 
@@ -46,10 +53,7 @@ export async function POST(req: Request) {
     });
 
     response.cookies.set("token", token, {
-      httpOnly: true,
-      secure: false, // true in production (https)
-      sameSite: "lax",
-      path: "/",
+      ...authCookieOptions,
     });
 
     return response;

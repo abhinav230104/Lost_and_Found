@@ -67,9 +67,13 @@ export async function GET(req: Request) {
 
     //Extract query params
     const type = searchParams.get("type"); // lost / found
-    const query = searchParams.get("query"); // search text
+    const query = searchParams.get("query"); // search text (title + description)
+    const location = searchParams.get("location"); // location filter
     const from = searchParams.get("from"); // date start
     const to = searchParams.get("to"); // date end
+    const status = searchParams.get("status"); // OPEN or CLOSED
+    const limit = parseInt(searchParams.get("limit") || "20");
+    const offset = parseInt(searchParams.get("offset") || "0");
 
     //Build dynamic filter
     const where: any = {};
@@ -79,11 +83,34 @@ export async function GET(req: Request) {
       where.type = type;
     }
 
-    //Search by title
+    //Filter by status
+    if (status && (status === "OPEN" || status === "CLOSED")) {
+      where.status = status;
+    }
+
+    //Search by title or description (case-insensitive)
     if (query) {
-      where.title = {
-        contains: query,
-        mode: "insensitive", //case-insensitive
+      where.OR = [
+        {
+          title: {
+            contains: query,
+            mode: "insensitive",
+          },
+        },
+        {
+          description: {
+            contains: query,
+            mode: "insensitive",
+          },
+        },
+      ];
+    }
+
+    //Filter by location
+    if (location) {
+      where.location = {
+        contains: location,
+        mode: "insensitive",
       };
     }
 
@@ -100,26 +127,41 @@ export async function GET(req: Request) {
       }
     }
 
-    //Fetch items
-    const items = await prisma.item.findMany({
-      where,
-      orderBy: {
-        createdAt: "desc", //latest first
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    //Fetch total count and items
+    const [items, total] = await Promise.all([
+      prisma.item.findMany({
+        where,
+        orderBy: {
+          createdAt: "desc", //latest first
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          claims: {
+            select: {
+              id: true,
+              status: true,
+            },
           },
         },
-      },
-    });
+        take: limit,
+        skip: offset,
+      }),
+      prisma.item.count({ where }),
+    ]);
 
     return NextResponse.json({
+      total,
       count: items.length,
       items,
+      offset,
+      limit,
+      hasMore: offset + limit < total,
     });
 
   } catch (error) {

@@ -1,9 +1,16 @@
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { sendOTP } from "@/lib/mail";
+import { rateLimit, createRateLimitResponse } from "@/lib/rateLimit";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const rateLimitCheck = rateLimit(req, "auth");
+  if (!rateLimitCheck.success) {
+    return createRateLimitResponse(rateLimitCheck.retryAfter!);
+  }
+
   try {
     const { email, name, password } = await req.json();
 
@@ -60,7 +67,7 @@ export async function POST(req: Request) {
         code: otp,
         name,
         password: hashedPassword,
-        expiresAt: new Date(Date.now() + 60 * 1000), // 1 min
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 min
       },
     });
 

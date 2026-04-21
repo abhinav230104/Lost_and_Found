@@ -1,7 +1,14 @@
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { rateLimit, createRateLimitResponse } from "@/lib/rateLimit";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const rateLimitCheck = rateLimit(req, "auth");
+  if (!rateLimitCheck.success) {
+    return createRateLimitResponse(rateLimitCheck.retryAfter!);
+  }
+
   try {
     const { email, otp } = await req.json();
 
@@ -42,6 +49,20 @@ export async function POST(req: Request) {
       );
     }
 
+    // Prevent duplicate user creation
+    const existingUser = await prisma.user.findUnique({
+      where: { email: record.email },
+    });
+
+    if (existingUser) {
+      await prisma.oTP.deleteMany({ where: { email } });
+
+      return NextResponse.json(
+        { error: "User already exists" },
+        { status: 400 }
+      );
+    }
+
     //Create user
     const user = await prisma.user.create({
       data: {
@@ -54,14 +75,14 @@ export async function POST(req: Request) {
     //Cleanup OTP
     await prisma.oTP.deleteMany({ where: { email } });
 
-  return NextResponse.json({
-  message: "User registered successfully",
-  user: {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-  },
-});
+    return NextResponse.json({
+      message: "User registered successfully",
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
+    });
 
   } catch (error) {
     console.error("VERIFY ERROR:", error);

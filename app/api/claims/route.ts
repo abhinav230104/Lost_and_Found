@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserFromToken } from "@/lib/getUser";
+import { createNotification } from "@/lib/notifications";
 
 export async function POST(req: Request) {
   try {
@@ -67,6 +68,21 @@ export async function POST(req: Request) {
         message,
       },
     });
+
+    // 7. Notify item owner
+    try {
+      await createNotification(
+        item.userId,
+        "claim_submitted",
+        "New Claim",
+        `Someone claimed your item "${item.title}"`,
+        itemId,
+        claim.id
+      );
+    } catch (notifError) {
+      console.error("Notification creation failed:", notifError);
+      // Don't fail the API call if notification fails
+    }
 
     return NextResponse.json({
       message: "Claim submitted",

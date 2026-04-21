@@ -1,13 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
-
-const socket = io("http://localhost:4000");
+import { useEffect, useRef, useState } from "react";
+import { io, Socket } from "socket.io-client";
 
 export default function Chat({ chatId }: { chatId: string }) {
   const [messages, setMessages] = useState<string[]>([]);
   const [input, setInput] = useState("");
+  const socketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    if (socketRef.current) return;
+    socketRef.current = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000");
+
+    return () => {
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+    };
+  }, []);
 
   // =========================
   // Load messages from DB
@@ -41,6 +50,9 @@ export default function Chat({ chatId }: { chatId: string }) {
   // Socket setup
   // =========================
   useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket) return;
+
     socket.emit("join_chat", chatId);
 
     socket.on("receive_message", (data) => {
@@ -78,6 +90,9 @@ export default function Chat({ chatId }: { chatId: string }) {
         console.log("API FAILED:", data);
         return;
       }
+
+      const socket = socketRef.current;
+      if (!socket) return;
 
       socket.emit("send_message", {
         chatId,

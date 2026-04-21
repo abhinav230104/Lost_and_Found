@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserFromToken } from "@/lib/getUser";
+import { createNotification } from "@/lib/notifications";
 
 export async function PATCH(
   req: Request,
@@ -97,6 +98,31 @@ export async function PATCH(
 
       return updatedClaim;
     });
+
+    // 5. Send notifications
+    try {
+      if (status === "approved") {
+        await createNotification(
+          claim.userId,
+          "claim_approved",
+          "Claim Approved",
+          `Your claim for "${claim.item.title}" has been approved! You can now chat with the item owner.`,
+          claim.itemId,
+          claimId
+        );
+      } else if (status === "rejected") {
+        await createNotification(
+          claim.userId,
+          "claim_rejected",
+          "Claim Rejected",
+          `Your claim for "${claim.item.title}" has been rejected.`,
+          claim.itemId,
+          claimId
+        );
+      }
+    } catch (notifError) {
+      console.error("Notification creation failed:", notifError);
+    }
 
     return NextResponse.json({
       message: `Claim ${status}`,

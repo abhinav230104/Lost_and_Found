@@ -72,11 +72,12 @@ useEffect(() => {
 
   useEffect(() => {
     if (!item || !me || !isOwner) return;
+    const currentItemId = item.id;
     let alive = true;
     async function loadClaims() {
       try {
         const data = await apiGet<{ claims: Array<Claim & { user: { name: string } }> }>(
-          `/api/items/${item.id}/claims`
+          `/api/items/${currentItemId}/claims`
         );
         if (alive) setClaims(data.claims);
       } catch {

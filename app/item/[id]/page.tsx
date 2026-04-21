@@ -34,36 +34,41 @@ export default function ItemDetailPage() {
 
   const isOwner = useMemo(() => (item && me ? item.userId === me.id : false), [item, me]);
 
-  useEffect(() => {
-    let alive = true;
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const detail = await apiGet<ItemDetailResponse>(`/api/items/${itemId}`);
-        if (!alive) return;
-        setItem(detail.item);
-        setImageBroken(false);
-      } catch (err) {
-        if (!alive) return;
-        if (err instanceof ApiError) setError(err.message);
-        else setError("Failed to load item");
-      } finally {
-        if (alive) setLoading(false);
-      }
+useEffect(() => {
+  let alive = true;
 
-      try {
-        const user = await apiGet<User>("/api/user/me");
-        if (alive) setMe(user);
-      } catch {
-        if (alive) setMe(null);
-      }
+  async function load() {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const detail = await apiGet<ItemDetailResponse>(`/api/items/${itemId}`);
+      if (!alive) return;
+
+      setItem(detail.item);
+      setImageBroken(false);
+    } catch (err) {
+      if (!alive) return;
+      if (err instanceof ApiError) setError(err.message);
+      else setError("Failed to load item");
+    } finally {
+      if (alive) setLoading(false);
     }
-    load();
-    return () => {
-      alive = false;
-    };
-  }, [itemId]);
+
+    try {
+      const user = await apiGet<User>("/api/user/me");
+      if (alive) setMe(user);
+    } catch {
+      if (alive) setMe(null);
+    }
+  }
+
+  load();
+
+  return () => {
+    alive = false;
+  };
+}, [itemId]);
 
   useEffect(() => {
     if (!item || !me || !isOwner) return;

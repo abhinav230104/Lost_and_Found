@@ -34,8 +34,8 @@ type ChatMessagesResponse = { chatId: string; messages: Message[] };
 
 function ChatSkeleton() {
   return (
-    <Card className="flex h-[calc(100vh-12rem)] min-h-[500px] overflow-hidden border-muted shadow-sm">
-      <div className="w-full md:w-[320px] border-r bg-muted/10 flex flex-col hidden md:flex">
+    <Card className="flex h-full min-h-[500px] overflow-hidden border-muted shadow-sm">
+      <div className="hidden w-full md:w-[320px] border-r bg-muted/10 md:flex md:flex-col">
         <div className="p-4 border-b">
           <Skeleton className="h-10 w-full rounded-md" />
         </div>
@@ -258,15 +258,15 @@ export default function ChatsPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 flex-1 min-h-0 flex flex-col">
       <div>
         <h2 className="text-3xl font-[var(--font-dm-serif)] tracking-tight">Messages</h2>
         <p className="text-muted-foreground mt-1 tracking-tight">Coordinate securely with finders and owners.</p>
       </div>
 
-      <Card className="flex h-[calc(100vh-16rem)] min-h-[500px] overflow-hidden border-muted shadow-sm">
+      <Card className="flex flex-1 min-h-[500px] md:min-h-0 overflow-hidden border-muted shadow-sm">
         {/* Sidebar - Chat List */}
-        <div className={`w-full md:w-[320px] flex-shrink-0 border-r bg-muted/10 flex flex-col ${selectedClaimId ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`w-full md:w-[320px] flex-shrink-0 border-r bg-muted/10 flex flex-col min-h-0 ${selectedClaimId ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-4 border-b bg-background/50 backdrop-blur supports-[backdrop-filter]:bg-background/50">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -279,7 +279,7 @@ export default function ChatsPage() {
             </div>
           </div>
           
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 min-h-0">
             {chats.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground flex flex-col items-center">
                 <MessageSquare className="h-8 w-8 mb-3 opacity-20" />
@@ -339,7 +339,7 @@ export default function ChatsPage() {
         </div>
 
         {/* Main Chat Area */}
-        <div className={`flex-1 flex flex-col min-w-0 bg-background ${!selectedClaimId ? 'hidden md:flex md:items-center md:justify-center md:bg-muted/10' : 'flex'}`}>
+        <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-background ${!selectedClaimId ? 'hidden md:flex md:items-center md:justify-center md:bg-muted/10' : 'flex'}`}>
           {selectedChat ? (
             <>
               {/* Chat Header */}
@@ -395,7 +395,7 @@ export default function ChatsPage() {
               {/* Messages Area */}
               <div 
                 ref={scrollRef}
-                className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scroll-smooth bg-[url('/noise.png')] bg-repeat"
+                className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-6 scroll-smooth"
               >
                 <div className="text-center text-xs text-muted-foreground border-b pb-4 mb-4 max-w-sm mx-auto">
                   <p className="font-medium text-foreground mb-1">Chat securely</p>

@@ -22,6 +22,11 @@ const dmSerif = DM_Serif_Display({
 export const metadata: Metadata = {
   title: "Lost & Found",
   description: "Campus lost and found platform",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

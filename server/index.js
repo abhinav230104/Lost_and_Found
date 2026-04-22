@@ -4,13 +4,37 @@ const cors = require("cors");
 const { Server } = require("socket.io");
 
 const app = express();
-const allowedOrigin = process.env.FRONTEND_URL || "http://localhost:3000";
+const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+const allowedOrigins = frontendUrl
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+
+  // Allow Vercel preview/production domains when explicitly enabled.
+  if (process.env.ALLOW_VERCEL_ORIGINS === "true") {
+    return /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
+  }
+
+  return false;
+}
+
+const corsOptions = {
+  origin(origin, callback) {
+    if (isAllowedOrigin(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error(`Not allowed by CORS: ${origin}`));
+  },
+  credentials: true,
+};
 
 app.use(
-  cors({
-    origin: allowedOrigin,
-    credentials: true,
-  })
+  cors(corsOptions)
 );
 
 app.get("/", (_req, res) => {
@@ -20,10 +44,7 @@ app.get("/", (_req, res) => {
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    origin: allowedOrigin,
-    credentials: true,
-  },
+  cors: corsOptions,
 });
 
 io.on("connection", (socket) => {

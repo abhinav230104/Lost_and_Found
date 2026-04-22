@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { DM_Sans, DM_Serif_Display, Geist } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
@@ -35,7 +36,9 @@ export default function RootLayout({
       className={`${dmSans.variable} ${dmSerif.variable} ${geist.variable} h-full antialiased`}
     >
       <body className={cn("min-h-[100dvh] flex flex-col bg-background text-foreground font-sans", geist.className)}>
-        <AppShell>{children}</AppShell>
+        <Suspense fallback={<main className="min-h-[100dvh]" />}>
+          <AppShell>{children}</AppShell>
+        </Suspense>
         <Toaster />
       </body>
     </html>

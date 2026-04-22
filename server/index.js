@@ -7,16 +7,23 @@ const app = express();
 const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
 const allowedOrigins = frontendUrl
   .split(",")
-  .map((origin) => origin.trim())
+  .map((origin) => origin.trim().replace(/\/$/, ""))
   .filter(Boolean);
 
+function normalizeOrigin(origin) {
+  return origin.trim().replace(/\/$/, "");
+}
+
 function isAllowedOrigin(origin) {
+  // Requests without Origin (curl, health checks, some server-to-server calls).
   if (!origin) return true;
-  if (allowedOrigins.includes(origin)) return true;
+
+  const normalizedOrigin = normalizeOrigin(origin);
+  if (allowedOrigins.includes(normalizedOrigin)) return true;
 
   // Allow Vercel preview/production domains when explicitly enabled.
   if (process.env.ALLOW_VERCEL_ORIGINS === "true") {
-    return /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
+    return /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(normalizedOrigin);
   }
 
   return false;
@@ -50,7 +57,23 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log("Connected:", socket.id);
 
-  // join room
+  // New frontend event style
+  socket.on("join-chat", (chatId) => {
+    socket.join(`chat-${chatId}`);
+    console.log("Joined chat:", `chat-${chatId}`);
+  });
+
+  socket.on("leave-chat", (chatId) => {
+    socket.leave(`chat-${chatId}`);
+    console.log("Left chat:", `chat-${chatId}`);
+  });
+
+  socket.on("message-sent", (data) => {
+    if (!data?.chatId) return;
+    io.to(`chat-${data.chatId}`).emit("new-message", data);
+  });
+
+  // Legacy event style kept for backward compatibility
   socket.on("join_chat", (chatId) => {
     socket.join(chatId);
     console.log("Joined chat:", chatId);
@@ -58,6 +81,7 @@ io.on("connection", (socket) => {
 
   // receive message
   socket.on("send_message", (data) => {
+    if (!data?.chatId) return;
     console.log("Message:", data);
 
     io.to(data.chatId).emit("receive_message", data);

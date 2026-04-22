@@ -116,14 +116,26 @@ export async function GET(req: Request) {
 
     //Date range filter
     if (from || to) {
-      where.date = {};
+      const parsedFrom = from ? new Date(from) : null;
+      const parsedTo = to ? new Date(to) : null;
 
-      if (from) {
-        where.date.gte = new Date(from); //from date
+      if ((parsedFrom && Number.isNaN(parsedFrom.getTime())) || (parsedTo && Number.isNaN(parsedTo.getTime()))) {
+        return NextResponse.json(
+          { error: "Invalid date range" },
+          { status: 400 }
+        );
       }
 
-      if (to) {
-        where.date.lte = new Date(to); //to date
+      where.date = {};
+
+      if (parsedFrom) {
+        where.date.gte = parsedFrom; // from date (inclusive)
+      }
+
+      if (parsedTo) {
+        // include the full selected day
+        parsedTo.setHours(23, 59, 59, 999);
+        where.date.lte = parsedTo;
       }
     }
 

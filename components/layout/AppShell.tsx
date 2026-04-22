@@ -13,10 +13,10 @@ import {
   Menu, 
   LogOut, 
   Search, 
-  LayoutDashboard, 
-  Package, 
+  LayoutDashboard,
+  Package,
   Inbox, 
-  MessageSquare, 
+  MessageSquare,
   Bell, 
   User as UserIcon,
   Home,
@@ -69,23 +69,15 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [shellSearch, setShellSearch] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-const { socket } = useSocket(user?.id ?? null);
+
+  const { socket } = useSocket(user?.id ?? null);
   const isAuthRoute = authRoutes.has(pathname);
-  const hideShell = isAuthRoute;
-  const isPublicPath = pathname === "/" || pathname.startsWith("/item/");
-  const requiresAuth = !isPublicPath && !isAuthRoute;
-  const shouldCheckAuth = requiresAuth || isAuthRoute;
+  const isPublicPath = pathname === "/" || isAuthRoute;
+  const requiresAuth = !isPublicPath;
+  const shouldCheckAuth = true;
 
   useEffect(() => {
     let alive = true;
-
-    if (!shouldCheckAuth) {
-      setIsCheckingAuth(false);
-      return () => {
-        alive = false;
-      };
-    }
 
     async function loadCurrentUser() {
       setIsCheckingAuth(true);
@@ -129,10 +121,10 @@ const { socket } = useSocket(user?.id ?? null);
 
   useEffect(() => {
     if (!socket || !user) return;
-    
+
     const handleNotif = () => setUnreadCount((c) => c + 1);
     socket.on("new-notification", handleNotif);
-    
+
     return () => {
       socket.off("new-notification", handleNotif);
     };
@@ -142,7 +134,7 @@ const { socket } = useSocket(user?.id ?? null);
     if (isCheckingAuth) return;
 
     if (!user && requiresAuth) {
-      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+      router.replace("/");
       return;
     }
 
@@ -188,10 +180,6 @@ const { socket } = useSocket(user?.id ?? null);
          </div>
       </main>
     );
-  }
-
-  if (hideShell) {
-    return <main className="min-h-screen bg-background">{children}</main>;
   }
 
   const authenticatedNavItems = user ? navItems : navItems.filter(item => item.href === "/");

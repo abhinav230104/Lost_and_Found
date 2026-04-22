@@ -246,11 +246,12 @@ export default function MyItemsPage() {
                     <MoreVertical className="h-3 w-3" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem asChild>
-                      <Link href={`/item/${item.id}`} className="cursor-pointer">
-                        <Eye className="h-4 w-4 mr-2" />
-                        View full details
-                      </Link>
+                    <DropdownMenuItem
+                      render={<Link href={`/item/${item.id}`} />}
+                      className="cursor-pointer"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View full details
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => toggleStatus(item)} className="cursor-pointer">
                       {item.status === "OPEN" ? (

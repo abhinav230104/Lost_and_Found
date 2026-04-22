@@ -41,9 +41,13 @@ function FeedSkeleton() {
 export default function HomePage() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("query") || "";
+  const initialFrom = searchParams.get("from") || "";
+  const initialTo = searchParams.get("to") || "";
 
   const [typeFilter, setTypeFilter] = useState<"all" | "lost" | "found">("all");
   const [query, setQuery] = useState(initialQuery);
+  const [fromDate, setFromDate] = useState(initialFrom);
+  const [toDate, setToDate] = useState(initialTo);
   const [items, setItems] = useState<Item[]>([]);
   const [trending, setTrending] = useState<Item[]>([]);
   const [resolved, setResolved] = useState<ResolvedItem[]>([]);
@@ -53,7 +57,9 @@ export default function HomePage() {
 
   useEffect(() => {
     setQuery(initialQuery);
-  }, [initialQuery]);
+    setFromDate(initialFrom);
+    setToDate(initialTo);
+  }, [initialQuery, initialFrom, initialTo]);
 
   useEffect(() => {
     let alive = true;
@@ -65,6 +71,8 @@ export default function HomePage() {
           apiGet<ItemsResponse>("/api/items", {
             type: typeFilter === "all" ? undefined : typeFilter,
             query: query || undefined,
+            from: fromDate || undefined,
+            to: toDate || undefined,
             limit: 12,
             offset: 0,
           }),
@@ -87,7 +95,7 @@ export default function HomePage() {
     return () => {
       alive = false;
     };
-  }, [typeFilter, query]);
+  }, [typeFilter, query, fromDate, toDate]);
 
   const itemStats = useMemo(() => {
     const resolvedCount = items.filter((i) => i.status === "CLOSED").length;
@@ -136,7 +144,7 @@ export default function HomePage() {
 
       {/* Filters & Search */}
       <section className="sticky top-0 z-20 -mx-4 px-4 py-3 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:mx-0 sm:px-0 border-b sm:border-none">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4">
           <Tabs 
             value={typeFilter} 
             onValueChange={(val) => setTypeFilter(val as any)}
@@ -148,14 +156,33 @@ export default function HomePage() {
               <TabsTrigger value="found">Found Items</TabsTrigger>
             </TabsList>
           </Tabs>
-          
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1fr)_180px_180px]">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="pl-9 bg-muted/50 border-border/50"
+                placeholder="Search title or description..."
+              />
+            </div>
+
             <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="pl-9 bg-muted/50 border-border/50"
-              placeholder="Search items, descriptions..."
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="bg-muted/50 border-border/50"
+              aria-label="From date"
+            />
+
+            <Input
+              type="date"
+              value={toDate}
+              min={fromDate || undefined}
+              onChange={(e) => setToDate(e.target.value)}
+              className="bg-muted/50 border-border/50"
+              aria-label="To date"
             />
           </div>
         </div>
@@ -185,7 +212,15 @@ export default function HomePage() {
             <p className="text-sm text-muted-foreground max-w-sm mt-1 mb-6">
               Try adjusting your search filters or clearing the query to see more results.
             </p>
-            <Button variant="outline" onClick={() => { setQuery(""); setTypeFilter("all"); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setQuery("");
+                setTypeFilter("all");
+                setFromDate("");
+                setToDate("");
+              }}
+            >
               Reset filters
             </Button>
           </div>

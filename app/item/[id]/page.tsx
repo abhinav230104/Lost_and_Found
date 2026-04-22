@@ -271,7 +271,18 @@ useEffect(() => {
                         <div key={claim.id} className="p-3 border rounded-lg bg-card/50 flex flex-col gap-2">
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-semibold">{claim.user?.name || "User"}</span>
-                            <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">Pending</Badge>
+                            <Badge
+                              variant={claim.status === "pending" ? "secondary" : "outline"}
+                              className={`px-1.5 py-0 text-[10px] capitalize ${
+                                claim.status === "approved"
+                                  ? "bg-emerald-500/10 text-emerald-700 border-emerald-300/40"
+                                  : claim.status === "rejected"
+                                    ? "bg-destructive/10 text-destructive border-destructive/30"
+                                    : ""
+                              }`}
+                            >
+                              {claim.status}
+                            </Badge>
                           </div>
                           {claim.message && (
                             <p className="text-xs text-muted-foreground italic border-l-2 pl-2 my-1">

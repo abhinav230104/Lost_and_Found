@@ -6,8 +6,8 @@ const AUTH_ROUTES = new Set(["/login", "/signup", "/verify-otp"]);
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Allow homepage for everyone.
-  if (pathname === "/") {
+  // Allow homepage and item detail pages for everyone.
+  if (pathname === "/" || pathname.startsWith("/item/")) {
     return NextResponse.next();
   }
 

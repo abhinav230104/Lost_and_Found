@@ -72,7 +72,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   const { socket } = useSocket(user?.id ?? null);
   const isAuthRoute = authRoutes.has(pathname);
-  const isPublicPath = pathname === "/" || isAuthRoute;
+  const isPublicPath = pathname === "/" || pathname.startsWith("/item/") || isAuthRoute;
   const requiresAuth = !isPublicPath;
   const shouldCheckAuth = true;
 

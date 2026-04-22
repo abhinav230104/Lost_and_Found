@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, MapPin, Calendar, Compass, SearchSlash } from "lucide-react";
 import { apiGet } from "@/lib/apiClient";
 import type { Item } from "@/lib/types";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -38,7 +38,7 @@ function FeedSkeleton() {
   );
 }
 
-export default function HomePage() {
+function HomePageContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("query") || "";
   const initialFrom = searchParams.get("from") || "";
@@ -105,7 +105,6 @@ export default function HomePage() {
 
   return (
     <div className="space-y-8 pb-8">
-      {/* Hero Section */}
       <section className="relative overflow-hidden rounded-2xl bg-slate-950 px-6 py-10 md:py-14 text-white shadow-md">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(225,29,72,0.15)_0%,transparent_58%),radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.05)_0%,transparent_42%)]" />
         <div className="relative z-10 max-w-2xl">
@@ -142,12 +141,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Filters & Search */}
       <section className="sticky top-0 z-20 -mx-4 px-4 py-3 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:mx-0 sm:px-0 border-b sm:border-none">
         <div className="flex flex-col gap-4">
-          <Tabs 
-            value={typeFilter} 
-            onValueChange={(val) => setTypeFilter(val as any)}
+          <Tabs
+            value={typeFilter}
+            onValueChange={(val) => setTypeFilter(val as "all" | "lost" | "found")}
             className="w-full sm:w-auto"
           >
             <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex">
@@ -194,13 +192,12 @@ export default function HomePage() {
         </div>
       ) : null}
 
-      {/* Main Feed */}
       <section>
         <div className="flex items-center gap-2 mb-4">
           <Compass className="h-5 w-5 text-rose-600" />
           <h2 className="text-xl font-bold tracking-tight">Recent Discovery Feed</h2>
         </div>
-        
+
         {loading ? (
           <FeedSkeleton />
         ) : items.length === 0 ? (
@@ -229,13 +226,12 @@ export default function HomePage() {
             {items.map((item) => (
               <Link key={item.id} href={`/item/${item.id}`} className="group block h-full">
                 <Card className="h-full overflow-hidden border-border/60 bg-card transition-all hover:shadow-md hover:border-primary/30 flex flex-col">
-                  {/* Image Placeholder / Thumbnail */}
                   <div className="relative h-36 bg-muted overflow-hidden">
                     {item.imageUrl ? (
                       <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300" />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted to-muted/80">
-                         <span className="text-4xl opacity-50">{item.type === "lost" ? "🎧" : "🔑"}</span>
+                        <span className="text-xs font-semibold tracking-widest opacity-50">{item.type === "lost" ? "LOST" : "FOUND"}</span>
                       </div>
                     )}
                     <div className="absolute top-2 left-2 flex gap-1.5">
@@ -249,7 +245,7 @@ export default function HomePage() {
                       )}
                     </div>
                   </div>
-                  
+
                   <CardContent className="p-4 flex-1">
                     <h3 className="font-semibold text-base line-clamp-1 group-hover:text-primary transition-colors tracking-tight mb-1">
                       {item.title}
@@ -264,7 +260,7 @@ export default function HomePage() {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Calendar className="h-3.5 w-3.5 shrink-0" />
-                        <span>{new Date(item.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        <span>{new Date(item.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -274,9 +270,14 @@ export default function HomePage() {
           </div>
         )}
       </section>
-      
-      {/* Resolved / Trending split section could go here later if required, omitted for clean feed focus */}
     </div>
   );
 }
 
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="py-10 text-center text-sm text-muted-foreground">Loading...</div>}>
+      <HomePageContent />
+    </Suspense>
+  );
+}

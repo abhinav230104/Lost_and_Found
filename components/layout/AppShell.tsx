@@ -104,7 +104,7 @@ const { socket } = useSocket(user?.id ?? null);
     return () => {
       alive = false;
     };
-  }, [shouldCheckAuth]);
+  }, [shouldCheckAuth, pathname]);
 
   useEffect(() => {
     if (!user) return;

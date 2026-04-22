@@ -63,7 +63,7 @@ export default function SignupPage() {
               <Input
                 id="name"
                 autoComplete="name"
-                placeholder="John Doe"
+                placeholder="Eg. Abhinav"
                 disabled={isSubmitting}
                 {...register("name")}
               />

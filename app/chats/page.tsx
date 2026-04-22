@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { 
   MessageSquare, 
@@ -85,6 +85,7 @@ function ChatSkeleton() {
 
 export default function ChatsPage() {
   const searchParams = useSearchParams();
+  const queryClaimId = searchParams.get("claimId");
   const [me, setMe] = useState<User | null>(null);
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
@@ -99,6 +100,22 @@ export default function ChatsPage() {
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const { socket } = useSocket(me?.id || null);
+
+  const syncChats = useCallback(async () => {
+    const chatRes = await apiGet<{ chats: ChatListItem[]; count: number }>("/api/chats/all");
+    const nextChats = chatRes.chats || [];
+
+    setChats(nextChats);
+    setSelectedClaimId((current) => {
+      if (queryClaimId && nextChats.some((chat) => chat.claim.id === queryClaimId)) {
+        return queryClaimId;
+      }
+      if (current && nextChats.some((chat) => chat.claim.id === current)) {
+        return current;
+      }
+      return nextChats[0]?.claim.id || null;
+    });
+  }, [queryClaimId]);
 
   // Load initial data
   useEffect(() => {
@@ -115,7 +132,7 @@ export default function ChatsPage() {
         setMe(user);
         setChats(chatRes.chats || []);
         
-        const initialClaimId = searchParams.get("claimId");
+        const initialClaimId = queryClaimId;
         if (initialClaimId && chatRes.chats?.some((chat) => chat.claim.id === initialClaimId)) {
           setSelectedClaimId(initialClaimId);
         } else if (chatRes.chats?.[0]) {
@@ -130,7 +147,34 @@ export default function ChatsPage() {
     }
     load();
     return () => { alive = false; };
-  }, [searchParams]);
+  }, [queryClaimId]);
+
+  // Keep chat list fresh for newly created chats and background updates.
+  useEffect(() => {
+    if (!me) return;
+
+    let alive = true;
+    const sync = async () => {
+      try {
+        await syncChats();
+      } catch {
+        if (!alive) return;
+      }
+    };
+
+    const intervalId = window.setInterval(sync, 8000);
+    const handleFocus = () => {
+      void sync();
+    };
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      alive = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [me, syncChats]);
 
   // Handle socket events for real-time messaging
   useEffect(() => {
@@ -139,6 +183,30 @@ export default function ChatsPage() {
     socket.emit("join-chat", selectedChatId, me.id);
 
     const messageHandler = (newMsg: Message) => {
+      setChats((prev) => {
+        const idx = prev.findIndex((chat) => chat.id === newMsg.chatId);
+        if (idx === -1) {
+          void syncChats();
+          return prev;
+        }
+
+        const chat = prev[idx];
+        const updated = {
+          ...chat,
+          messages: [{
+            id: newMsg.id,
+            createdAt: newMsg.createdAt,
+            senderId: newMsg.senderId,
+            content: newMsg.content,
+          }],
+        };
+
+        const next = [...prev];
+        next.splice(idx, 1);
+        next.unshift(updated);
+        return next;
+      });
+
       if (newMsg.chatId === selectedChatId) {
         setMessages((prev) => {
           if (prev.some((m) => m.id === newMsg.id)) return prev;
@@ -153,7 +221,7 @@ export default function ChatsPage() {
       socket.off("new-message", messageHandler);
       socket.emit("leave-chat", selectedChatId, me.id);
     };
-  }, [socket, selectedChatId, me]);
+  }, [socket, selectedChatId, me, syncChats]);
 
   // Load specific chat messages
   useEffect(() => {

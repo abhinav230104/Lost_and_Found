@@ -279,6 +279,10 @@ export default function ChatsPage() {
         chatId: selectedChatId,
         content: content,
       });
+
+      if (socket?.connected) {
+        socket.emit("message-sent", res.message);
+      }
       
       // Update local state fallback in case socket is slow
       setMessages(prev => {
